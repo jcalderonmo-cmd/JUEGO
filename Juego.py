@@ -21,31 +21,40 @@ MARGEN_INFERIOR = 40
 
 font = pygame.font.SysFont("Verdana", 60)
 font_small = pygame.font.SysFont("Verdana", 20)
+
+
 game_over = font.render("Game Over", True, WHITE)
 you_win = font.render("You Win!", True, GREEN)
+juego_completado_txt = font.render("¡JUEGO FINALIZADO!", True, GREEN)
 
-texto=game_over.get_rect()
-texto.center=(SCREEN_ANCHO/2,SCREEN_ALTO/2)
-
-
-DISPLAYSURF = pygame.display.set_mode((SCREEN_ANCHO,SCREEN_ALTO))
-DISPLAYSURF.fill(WHITE)
-pygame.display.set_caption("Game")
+DISPLAYSURF = pygame.display.set_mode((SCREEN_ANCHO, SCREEN_ALTO))
+pygame.display.set_caption("Dino Hunter")
 
 
 background = pygame.image.load("IMAGENES/fondo1.png").convert()
 background = pygame.transform.scale(background, (SCREEN_ANCHO, SCREEN_ALTO))
+
+nivel_actual = 1
+TOTAL_NIVELES = 2
+
 
 juego_pausado = False
 juego_ganado = False
 juego_perdido = False
 
 
-balas_maximas = 10
-balas_restantes = 10
+balas_maximas = 6
+balas_restantes = 6
 
 
-boton_pausa_rect = pygame.Rect(1200, 20, 130, 40)
+boton_top_pausa_rect = pygame.Rect(1200, 20, 130, 40)
+boton_reanudar_rect = pygame.Rect(SCREEN_ANCHO // 2 - 160, SCREEN_ALTO // 2, 140, 45)
+boton_reiniciar_rect = pygame.Rect(SCREEN_ANCHO // 2 + 20, SCREEN_ALTO // 2, 140, 45)
+boton_reiniciar_centro_rect = pygame.Rect(SCREEN_ANCHO // 2 - 80, SCREEN_ALTO // 2 + 40, 160, 45)
+
+boton_siguiente_rect = pygame.Rect(SCREEN_ANCHO // 2 - 170, SCREEN_ALTO // 2 + 20, 160, 45)
+boton_reiniciar_win_rect = pygame.Rect(SCREEN_ANCHO // 2 + 10, SCREEN_ALTO // 2 + 20, 160, 45)
+
 
 class Mira:
     def __init__(self, origen_x, origen_y, longitud=100):
@@ -130,13 +139,16 @@ class Cazador(pygame.sprite.Sprite):
         pass
 
 class Structure(pygame.sprite.Sprite):
-    def __init__(self, x, ancho=80, alto=120):
+    def __init__(self, x, y=None, ancho=80, alto=120):
         super().__init__()
         self.image = pygame.Surface((ancho, alto))
         self.image.fill(BLACK)  
         self.rect = self.image.get_rect()
         self.rect.x = x
-        self.rect.bottom = SCREEN_ALTO - MARGEN_INFERIOR
+        if y is not None:
+            self.rect.y = y
+        else:
+            self.rect.bottom = SCREEN_ALTO - MARGEN_INFERIOR
     def move(self):
         pass   
 
@@ -274,44 +286,55 @@ class Proyectil(pygame.sprite.Sprite):
             self.vel_y = -self.vel_y * factor_rebote
 
 
+def Cargar_Nivel():
+    global all_sprites, meteoros, enemies, estructuras, disparo
+    global C1, apuntador, barra_potencia, balas_restantes, balas_maximas
+    global juego_pausado, juego_ganado, juego_perdido
 
-    
-         
-barra_potencia = Barra(x=15, y=580, ancho=120, alto=12)
+    juego_pausado = False
+    juego_ganado = False
+    juego_perdido = False
 
+    balas_maximas = 6
+    balas_restantes = 6
 
-all_sprites = pygame.sprite.Group()
-meteoros = pygame.sprite.Group()
-enemies = pygame.sprite.Group()       
-estructuras = pygame.sprite.Group()
-disparo = pygame.sprite.Group()
+    all_sprites = pygame.sprite.Group()
+    meteoros = pygame.sprite.Group()
+    enemies = pygame.sprite.Group()       
+    estructuras = pygame.sprite.Group()
+    disparo = pygame.sprite.Group()
 
+    for _ in range(6):
+        m = meteor(tamano=20)
+        meteoros.add(m)
+        all_sprites.add(m)
 
-for _ in range(6):
-    m = meteor(tamano=20)
-    meteoros.add(m)
-    all_sprites.add(m)
+    if nivel_actual == 1:
+        est1 = Structure(x=970, ancho=70, alto=100)
+        est2 = Structure(x=1070, ancho=60, alto=70)
+        est3 = Structure(x=1200, ancho=75, alto=130) 
+    elif nivel_actual == 2:
+        est1 = Structure(x=780, y=280, ancho=110, alto=18)  
+        est2 = Structure(x=980, y=420, ancho=100, alto=18)  
+        est3 = Structure(x=1200, ancho=75, alto=130)       
 
+    estructuras.add(est1, est2, est3)
+    all_sprites.add(est1, est2, est3)
 
-est1 = Structure(x=970, ancho=70, alto=100)
-est2 = Structure(x=1070, ancho=60, alto=70)
-est3 = Structure(x=1200, ancho=75, alto=130)
+    dino1 = Dinosaur(estructura=est1, alto=60)   
+    dino2 = Dinosaur(estructura=est2, alto=60)   
+    dino3 = Dinosaur(estructura=est3, alto=60)
 
-estructuras.add(est1, est2, est3)
-all_sprites.add(est1, est2, est3)
+    enemies.add(dino1, dino2, dino3)
+    all_sprites.add(dino1, dino2, dino3)
 
-dino1 = Dinosaur(estructura=est1, alto=60)   
-dino2 = Dinosaur(estructura=est2, alto=60)   
-dino3 = Dinosaur(estructura=est3, alto=60)
+    C1 = Cazador(alto=60)
+    all_sprites.add(C1)
 
+    barra_potencia = Barra(x=15, y=580, ancho=120, alto=12)
+    apuntador = Mira(origen_x=C1.rect.right - 10, origen_y=C1.rect.centery - 5, longitud=100)
 
-enemies.add(dino1, dino2, dino3)
-all_sprites.add(dino1, dino2, dino3)
-
-C1= Cazador(alto=60)
-all_sprites.add(C1)
-
-apuntador = Mira(origen_x=C1.rect.right - 10, origen_y=C1.rect.centery - 5, longitud=100)
+Cargar_Nivel()
 
 while True:
       for event in pygame.event.get():
@@ -322,13 +345,52 @@ while True:
 
         if event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
-                if boton_pausa_rect.collidepoint(event.pos):
-                    juego_pausado = not juego_pausado
+                if not juego_pausado and not juego_ganado and not juego_perdido:
+                    if boton_top_pausa_rect.collidepoint(event.pos):
+                        juego_pausado = True
+
+
+                elif juego_pausado:
+                    if boton_reanudar_rect.collidepoint(event.pos):
+                        juego_pausado = False
+                    elif boton_reiniciar_rect.collidepoint(event.pos):
+                        Cargar_Nivel()
+
+                elif juego_ganado:
+                    if nivel_actual < TOTAL_NIVELES:
+                        if boton_siguiente_rect.collidepoint(event.pos):
+                            nivel_actual += 1
+                            Cargar_Nivel()
+                        elif boton_reiniciar_win_rect.collidepoint(event.pos):
+                            Cargar_Nivel()
+                    else:
+                        if boton_reiniciar_centro_rect.collidepoint(event.pos):
+                            nivel_actual = 1
+                            Cargar_Nivel()
+                elif juego_perdido:
+                    if boton_reiniciar_centro_rect.collidepoint(event.pos):
+                        nivel_actual = 1
+                        Cargar_Nivel()
+                
 
 
         if event.type == KEYDOWN:
-            if event.key == K_p:
+            if event.key == K_p and not juego_ganado and not juego_perdido:
                 juego_pausado = not juego_pausado
+
+
+            if event.key == K_r:
+                if juego_pausado:
+                    Cargar_Nivel()
+                elif juego_ganado:
+                    if nivel_actual < TOTAL_NIVELES:
+                        Cargar_Nivel()
+                    else:
+                        nivel_actual = 1
+                        Cargar_Nivel()
+                elif juego_perdido:
+                    nivel_actual = 1
+                    Cargar_Nivel()
 
 
         if event.type == KEYUP and not juego_pausado and not juego_perdido and not juego_ganado:
@@ -354,7 +416,6 @@ while True:
         pygame.sprite.groupcollide(disparo , enemies, True, True)
 
         colisiones_estructuras = pygame.sprite.groupcollide(disparo, estructuras, False, False)
-        
         for bala, lista_estructuras in colisiones_estructuras.items():
             for est in lista_estructuras:
                 bala.Rebote(est)
@@ -374,30 +435,62 @@ while True:
       for entity in all_sprites:
         DISPLAYSURF.blit(entity.image, entity.rect)
 
-      color_btn = (200, 100, 0) if juego_pausado else (0, 150, 0)
-      pygame.draw.rect(DISPLAYSURF, color_btn, boton_pausa_rect, border_radius=8)
-
-      txt_btn = font_small.render("REANUDAR" if juego_pausado else "PAUSA", True, WHITE)
-      txt_rect = txt_btn.get_rect(center=boton_pausa_rect.center)
-      DISPLAYSURF.blit(txt_btn, txt_rect)
+      if not juego_pausado and not juego_ganado and not juego_perdido:
+        pygame.draw.rect(DISPLAYSURF, (0, 150, 0), boton_top_pausa_rect, border_radius=8)
+        txt_btn = font_small.render("PAUSA", True, WHITE)
+        txt_rect = txt_btn.get_rect(center=boton_top_pausa_rect.center)
+        DISPLAYSURF.blit(txt_btn, txt_rect)
 
       texto_balas = font_small.render(f"Balas: {balas_restantes}/{balas_maximas}", True, WHITE)
       DISPLAYSURF.blit(texto_balas, (20, 20))
+
+      texto_nivel = font_small.render(f"NIVEL {nivel_actual}/{TOTAL_NIVELES}", True, WHITE)
+      rect_nivel = texto_nivel.get_rect(center=(SCREEN_ANCHO // 2, 30))
+      DISPLAYSURF.blit(texto_nivel, rect_nivel)
 
 
 
       if juego_pausado:
         aviso_pausa = font.render("JUEGO EN PAUSA", True, WHITE)
-        aviso_rect = aviso_pausa.get_rect(center=(SCREEN_ANCHO / 2, SCREEN_ALTO / 2))
+        aviso_rect = aviso_pausa.get_rect(center=(SCREEN_ANCHO / 2, SCREEN_ALTO / 2 - 60))
         DISPLAYSURF.blit(aviso_pausa, aviso_rect)
 
+        pygame.draw.rect(DISPLAYSURF, (0, 150, 0), boton_reanudar_rect, border_radius=8)
+        txt_reanudar = font_small.render("REANUDAR", True, WHITE)
+        DISPLAYSURF.blit(txt_reanudar, txt_reanudar.get_rect(center=boton_reanudar_rect.center))
+
+        pygame.draw.rect(DISPLAYSURF, (200, 100, 0), boton_reiniciar_rect, border_radius=8)
+        txt_reiniciar = font_small.render("REINICIAR", True, WHITE)
+        DISPLAYSURF.blit(txt_reiniciar, txt_reiniciar.get_rect(center=boton_reiniciar_rect.center))
+
       if juego_ganado:
-        win_rect = you_win.get_rect(center=(SCREEN_ANCHO / 2, SCREEN_ALTO / 2))
-        DISPLAYSURF.blit(you_win, win_rect)
+        if nivel_actual < TOTAL_NIVELES:
+            win_rect = you_win.get_rect(center=(SCREEN_ANCHO / 2, SCREEN_ALTO / 2 - 40))
+            DISPLAYSURF.blit(you_win, win_rect)
+
+            pygame.draw.rect(DISPLAYSURF, (0, 150, 0), boton_siguiente_rect, border_radius=8)
+            txt_sig = font_small.render("SIG. NIVEL", True, WHITE)
+            DISPLAYSURF.blit(txt_sig, txt_sig.get_rect(center=boton_siguiente_rect.center))
+
+            pygame.draw.rect(DISPLAYSURF, (200, 100, 0), boton_reiniciar_win_rect, border_radius=8)
+            txt_rein = font_small.render("REINICIAR", True, WHITE)
+            DISPLAYSURF.blit(txt_rein, txt_rein.get_rect(center=boton_reiniciar_win_rect.center))
+        else:
+            fin_rect = juego_completado_txt.get_rect(center=(SCREEN_ANCHO / 2, SCREEN_ALTO / 2 - 40))
+            DISPLAYSURF.blit(juego_completado_txt, fin_rect)
+
+            pygame.draw.rect(DISPLAYSURF, (200, 100, 0), boton_reiniciar_centro_rect, border_radius=8)
+            txt_reiniciar = font_small.render("INICIO", True, WHITE)
+            DISPLAYSURF.blit(txt_reiniciar, txt_reiniciar.get_rect(center=boton_reiniciar_centro_rect.center))
+
 
       if juego_perdido:
           game_over_rect = game_over.get_rect(center=(SCREEN_ANCHO / 2, SCREEN_ALTO / 2))
           DISPLAYSURF.blit(game_over, game_over_rect)
+
+          pygame.draw.rect(DISPLAYSURF, (200, 100, 0), boton_reiniciar_centro_rect, border_radius=8)
+          txt_reiniciar = font_small.render("REINICIAR", True, WHITE)
+          DISPLAYSURF.blit(txt_reiniciar, txt_reiniciar.get_rect(center=boton_reiniciar_centro_rect.center))
 
       if not juego_perdido and not juego_ganado:
         apuntador.draw(DISPLAYSURF)
